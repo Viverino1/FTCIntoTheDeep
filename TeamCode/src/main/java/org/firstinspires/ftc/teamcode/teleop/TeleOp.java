@@ -8,11 +8,9 @@ import com.arcrobotics.ftclib.command.button.Trigger;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 
-import org.firstinspires.ftc.teamcode.util.ftclib.commands.HomeOuttakeSlides;
 import org.firstinspires.ftc.teamcode.util.ftclib.commands.Movement;
 import org.firstinspires.ftc.teamcode.util.ftclib.commands.RunIntakeSlidesPID;
 import org.firstinspires.ftc.teamcode.util.ftclib.commands.RunOuttakeSlidesPID;
-import org.firstinspires.ftc.teamcode.util.ftclib.commands.outtake.PresetSubmirsible;
 import org.firstinspires.ftc.teamcode.util.ftclib.subsystems.Chassis;
 import org.firstinspires.ftc.teamcode.util.ftclib.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.util.ftclib.subsystems.IntakeSlides;
@@ -89,7 +87,7 @@ public class TeleOp extends CommandOpMode {
 
         driverOp.getGamepadButton(GamepadKeys.Button.B)
                 .whenPressed(() -> {
-                    outtake.setArm(Outtake.armSubmirsiblePos);
+                    outtake.setArm(Outtake.armSubmersiblePos);
                     outtake.setPivot(Outtake.pivotSubmersiblePos);
                 });
 
@@ -124,7 +122,5 @@ public class TeleOp extends CommandOpMode {
                         (OuttakeSlides.getPos() > OuttakeSlides.minPos)? (Chassis.isSlowed? -Chassis.slowSpeed : -0.75) : 0
                 ), outtakeSlides))
                 .whenInactive(new InstantCommand(() -> OuttakeSlides.setTargetPos(OuttakeSlides.getPos()),  outtakeSlides));
-
-
     }
 }

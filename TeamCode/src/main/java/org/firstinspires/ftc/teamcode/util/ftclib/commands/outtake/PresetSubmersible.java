@@ -5,9 +5,9 @@ import com.arcrobotics.ftclib.command.CommandBase;
 import org.firstinspires.ftc.teamcode.util.ftclib.subsystems.Outtake;
 import org.firstinspires.ftc.teamcode.util.ftclib.subsystems.OuttakeSlides;
 
-public class PresetSubmirsible extends CommandBase {
+public class PresetSubmersible extends CommandBase {
     Outtake outtake;
-    public PresetSubmirsible(Outtake outtake) {
+    public PresetSubmersible(Outtake outtake) {
         this.outtake = outtake;
         addRequirements(outtake);
 

@@ -1,9 +1,8 @@
 package org.firstinspires.ftc.teamcode.util.ftclib.subsystems;
 
-import android.util.Log;
+import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -12,15 +11,30 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.util.PIDController;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import dev.frozenmilk.dairy.core.dependency.Dependency;
+import dev.frozenmilk.dairy.core.dependency.annotation.SingleAnnotation;
+import dev.frozenmilk.dairy.core.wrapper.Wrapper;
+import dev.frozenmilk.mercurial.Mercurial;
+import dev.frozenmilk.mercurial.commands.Lambda;
+import dev.frozenmilk.mercurial.subsystems.Subsystem;
+import kotlin.annotation.MustBeDocumented;
+
 @Config
-public class OuttakeSlides extends SubsystemBase {
+public class OuttakeSlides implements Subsystem {
+    public static final OuttakeSlides INSTANCE = new OuttakeSlides();
     public static DcMotorEx slideR;
     public static DcMotorEx slideL;
-    Telemetry telemetry;
+    public static Telemetry telemetry;
     public static int tolerance = 100;
     public static int submirsiblePos = 0;
     public static int bucketPos = 0;
-    public static int scoreSubmirsiblePos = 0;
+    public static int scoreSubmersiblePos = 0;
     public static class Gains{
         public double Kp = 0.005;
         public double Ki = 0;
@@ -33,14 +47,38 @@ public class OuttakeSlides extends SubsystemBase {
     public static Gains GAINS = new Gains();
     public static volatile PIDController pidController = new PIDController(GAINS.Kp, GAINS.Ki, GAINS.Kd, 0);
 
-    public OuttakeSlides(final HardwareMap hMap, final Telemetry telemetry){
-        this.telemetry = telemetry;
+    private OuttakeSlides() {}
+
+    @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE) @MustBeDocumented
+    @Inherited
+    public @interface Attach { }
+
+    @Override
+    public void postUserInitHook(@NonNull Wrapper opMode) {
+        HardwareMap hMap = opMode.getOpMode().hardwareMap;
         slideR = hMap.get(DcMotorEx.class, "outtakeSR");
         slideL = hMap.get(DcMotorEx.class, "outtakeSL");
         slideR.setCurrentAlert(zeroCurrent, CurrentUnit.AMPS);
         slideL.setCurrentAlert(zeroCurrent, CurrentUnit.AMPS);
         slideR.setDirection(DcMotorSimple.Direction.FORWARD);
         slideL.setDirection(DcMotorSimple.Direction.REVERSE);
+        setDefaultCommand(runPID());
+    }
+
+    @Override
+    public void postUserLoopHook(@NonNull Wrapper opMode) {}
+
+    private Dependency<?> dependency = Subsystem.DEFAULT_DEPENDENCY.and(new SingleAnnotation<>(Mercurial.Attach.class));
+
+    @NonNull
+    @Override
+    public Dependency<?> getDependency() {
+        return dependency;
+    }
+
+    @Override
+    public void setDependency(@NonNull Dependency<?> dependency) {
+        this.dependency = dependency;
     }
 
     public static void setPower(double power){
@@ -50,11 +88,6 @@ public class OuttakeSlides extends SubsystemBase {
 
     public boolean isOverCurrent(){
         return slideR.isOverCurrent() || slideL.isOverCurrent();
-    }
-
-    public static void updatePID(){
-        double power = pidController.getPower(getPos());
-        setPower(power);
     }
 
     public void resetEncoder(){
@@ -84,5 +117,22 @@ public class OuttakeSlides extends SubsystemBase {
     public void logPos(){
         telemetry.addData("Slide Pos", slideR.getCurrentPosition());
         telemetry.update();
+    }
+
+    public Lambda runPID() {
+        return new Lambda("outake-pid")
+                .addRequirements(INSTANCE)
+                .setExecute(() -> {
+                    double power = pidController.getPower(getPos());
+                    setPower(power);
+                })
+                .setFinish(() -> false);
+    }
+
+    public Lambda returnSlides() {
+        return new Lambda("return-slides")
+                .addRequirements(INSTANCE)
+                .setExecute(() -> setPower(-.5))
+                .setFinish(() -> isOverCurrent() && getPos() < 50);
     }
 }
