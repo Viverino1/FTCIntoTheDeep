@@ -3,9 +3,11 @@ package org.firstinspires.ftc.teamcode.util.ftclib.subsystems;
 import androidx.annotation.NonNull;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.SleepAction;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.NextLock;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -17,6 +19,7 @@ import dev.frozenmilk.dairy.core.dependency.Dependency;
 import dev.frozenmilk.dairy.core.dependency.annotation.SingleAnnotation;
 import dev.frozenmilk.dairy.core.wrapper.Wrapper;
 import dev.frozenmilk.mercurial.Mercurial;
+import dev.frozenmilk.mercurial.commands.Lambda;
 import dev.frozenmilk.mercurial.subsystems.Subsystem;
 import kotlin.annotation.MustBeDocumented;
 
@@ -46,6 +49,8 @@ public class Outtake implements Subsystem {
     public static double pivotHomePos = 0.225;
     public static double pivotBucketPos = 0.3;
 
+    public static NextLock.Waiter waiter;
+
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE) @MustBeDocumented
     @Inherited
     public @interface Attach { }
@@ -64,7 +69,6 @@ public class Outtake implements Subsystem {
     @Override
     public void postUserInitHook(@NonNull Wrapper opMode) {
         HardwareMap hMap = opMode.getOpMode().hardwareMap;
-
         armR = hMap.get(Servo.class, "arm1");
         armL = hMap.get(Servo.class, "arm2");
 
@@ -74,34 +78,49 @@ public class Outtake implements Subsystem {
 
         pivot = hMap.get(Servo.class, "pivot");
 
-        setPivot(Outtake.pivotHomePos);
-        setArm(Outtake.armHomePos);
-        openClaw();
+//        setPivot(Outtake.pivotHomePos);
+//        setArm(Outtake.armHomePos);
+//        openClaw();
     }
 
     @Override
     public void postUserLoopHook(@NonNull Wrapper opMode) {}
 
-    public void openClaw(){
-        setClaw(clawOpenPos);
+    public static Lambda openClaw(){
+        return new Lambda("open-claw")
+                .addRequirements(INSTANCE)
+                .setInterruptible(false)
+                .setInit(() -> setClaw(clawOpenPos))
+                .setFinish(() -> true);
     }
 
-    public void closeClaw(){
-        setClaw(clawClosePos);
+    public static Lambda closeClaw(){
+        return new Lambda("close-claw")
+                .addRequirements(INSTANCE)
+                .setInterruptible(false)
+                .setInit(() -> setClaw(clawClosePos))
+                .setFinish(() -> true);
     }
 
-    private void setClaw(double pos){
+    private static void setClaw(double pos){
         clawR.setPosition(pos);
         clawL.setPosition(pos);
+
     }
 
-    public void  setArm(double pos){
-        armR.setPosition(pos);
-        armL.setPosition(pos);
+    public static Lambda setArm(double pos){
+        return new Lambda("set-arm")
+                .addRequirements(INSTANCE)
+                .setInit(() -> {
+                    armR.setPosition(pos);
+                    armL.setPosition(pos);
+                });
     }
 
-    public void setPivot(double pos){
-        pivot.setPosition(pos);
+    public static Lambda setPivot(double pos){
+        return new Lambda("set-pivot")
+                .addRequirements(INSTANCE)
+                .setInit(() -> pivot.setPosition(pos));
     }
 
 

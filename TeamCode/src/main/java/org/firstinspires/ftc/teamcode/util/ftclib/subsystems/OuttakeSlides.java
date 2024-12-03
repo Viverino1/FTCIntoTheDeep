@@ -81,13 +81,25 @@ public class OuttakeSlides implements Subsystem {
         this.dependency = dependency;
     }
 
-    public static void setPower(double power){
-        slideR.setPower(power);
-        slideR.setPower(power);
+    public static Lambda setPower(double power){
+        return new Lambda("set-power")
+                .addRequirements(INSTANCE)
+                .setExecute(() -> {
+                    slideR.setPower(Chassis.isSlowed? power * Chassis.slowSpeed : power);
+                    slideL.setPower(Chassis.isSlowed? power * Chassis.slowSpeed : power);
+                });
     }
 
-    public boolean isOverCurrent(){
+    public static boolean isBothOverCurrent() {
         return slideR.isOverCurrent() || slideL.isOverCurrent();
+    }
+
+    public static boolean isLeftOverCurrent() {
+        return slideL.isOverCurrent();
+    }
+
+    public static boolean isRightOverCurrent() {
+        return slideR.isOverCurrent();
     }
 
     public void resetEncoder(){
@@ -101,12 +113,15 @@ public class OuttakeSlides implements Subsystem {
         pidController.reset();
     }
 
-    public static void setTargetPos(int pos){
-        pidController.setReference(pos);
+    public static Lambda setTargetPos(int pos){
+        return new Lambda("set-target-pos")
+                .addRequirements(INSTANCE)
+                .setInit(() -> pidController.setReference(pos))
+                .setFinish(() -> true);
     }
 
-    public void logCurrent(){
-        telemetry.addData("isOver", this.isOverCurrent());
+    public static void logCurrent(){
+        telemetry.addData("isOver", isBothOverCurrent());
         telemetry.update();
     }
 
@@ -119,8 +134,8 @@ public class OuttakeSlides implements Subsystem {
         telemetry.update();
     }
 
-    public Lambda runPID() {
-        return new Lambda("outake-pid")
+    public static Lambda runPID() {
+        return new Lambda("outtake-pid")
                 .addRequirements(INSTANCE)
                 .setExecute(() -> {
                     double power = pidController.getPower(getPos());
@@ -129,10 +144,16 @@ public class OuttakeSlides implements Subsystem {
                 .setFinish(() -> false);
     }
 
-    public Lambda returnSlides() {
-        return new Lambda("return-slides")
+    public static Lambda returnLeft() {
+        return new Lambda("return-left")
                 .addRequirements(INSTANCE)
                 .setExecute(() -> setPower(-.5))
-                .setFinish(() -> isOverCurrent() && getPos() < 50);
+                .setFinish(() -> isLeftOverCurrent() && getPos() < 50);
+    }
+    public static Lambda returnRight() {
+        return new Lambda("return-right")
+                .addRequirements(INSTANCE)
+                .setExecute(() -> setPower(-.5))
+                .setFinish(() -> isRightOverCurrent() && getPos() < 50);
     }
 }

@@ -17,6 +17,7 @@ import java.lang.annotation.Target;
 import dev.frozenmilk.dairy.core.dependency.Dependency;
 import dev.frozenmilk.dairy.core.dependency.annotation.SingleAnnotation;
 import dev.frozenmilk.dairy.core.wrapper.Wrapper;
+import dev.frozenmilk.mercurial.commands.Lambda;
 import dev.frozenmilk.mercurial.subsystems.Subsystem;
 import kotlin.annotation.MustBeDocumented;
 
@@ -55,30 +56,45 @@ public class Intake implements Subsystem {
         dropL = hMap.get(Servo.class, "dropdownL");
         dropR = hMap.get(Servo.class, "dropdownR");
         spintake = hMap.get(DcMotorEx.class, "spintake");
-        raise();
-        spin(0);
+        //raise();
+        //spin(0);
     }
 
     @Override
     public void postUserLoopHook(@NonNull Wrapper opMode) {}
 
-    public void drop(){
+    private static void drop(){
         dropL.setPosition(dropPos);
         dropR.setPosition(dropPos);
     }
 
-    public void raise(){
+    private static void raise(){
         dropL.setPosition(raisePos);
         dropR.setPosition(raisePos);
     }
 
-    public void spin(double power){
+    private static void spin(double power){
         spintake.setPower(power);
     }
 
-    public void stop(){
+    private static void stop(){
         spintake.setPower(0);
     }
 
+    public static Lambda spintake(double power){
+        return new Lambda("spintake")
+                .addRequirements(INSTANCE)
+                .setInit(() -> spin(power));
+    }
 
+    public static Lambda raiseIntake() {
+        return new Lambda("raise-intake")
+                .addRequirements(INSTANCE)
+                .setInit(Intake::raise);
+    }
+    public static Lambda dropIntake() {
+        return new Lambda("drop-intake")
+                .addRequirements(INSTANCE)
+                .setInit(Intake::drop);
+    }
 }
